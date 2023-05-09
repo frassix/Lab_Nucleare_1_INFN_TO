@@ -36,19 +36,16 @@ double posterior_error(double X[], double Y[], int n, double m, double q){
     return sqrt(var);
 }
 
-void calibrazione(double chn = 0){
+void calibrazione(double time = 0, double chn = 0){
     const int nmisure = 7;
 
     double delay[nmisure] = {-45., -30., -15., 0., 15., 30., 45.};
     double canale[nmisure] = {216, 278, 338, 398, 464, 532, 602};
     double scanale[nmisure] = {1, 1, 1, 1, 1, 1, 1};
 
-    TCanvas* t1 = new TCanvas();
     TF1* fit_line = new TF1("Line","[0]*x+[1]", -45.,45.);
     TGraphErrors* plot = new TGraphErrors(nmisure,  delay, canale, NULL, scanale);
     TFitResultPtr r = plot->Fit(fit_line,"","", -45.,45.);
-    plot->Draw();
-    fit_line->Draw("same");
     cout << "Prob: " << fit_line->GetProb() << "; X^2: " << fit_line->GetChisquare() << endl;
 
     double m = fit_line->GetParameter(0);
@@ -68,12 +65,21 @@ void calibrazione(double chn = 0){
     TCanvas* t2 = new TCanvas();
     TF1* fit_line_2 = new TF1("Line a posterior","[0]*x+[1]",-45., 45.);
     TGraphErrors* plot_2 = new TGraphErrors(nmisure,  delay, canale, NULL, scanale_post);
+    gStyle->SetOptStat(0);
+    plot_2->GetXaxis()->SetTitle("Delay (ns)");
+    histon45->GetYaxis()->SetTitle("Canali");
     plot_2->Fit(fit_line_2,"","", -45.,45.);
     plot_2->Draw();
     fit_line_2->Draw("same");
+    m = fit_line_2->GetParameter(0);
+    double sm = fit_line_2->GetParError(0);
+    q = fit_line_2->GetParameter(1);
+    double sq = fit_line_2->GetParError(1);
     cout << endl << "Prob: " << fit_line_2->GetProb() << "; X^2/ndf: " << fit_line_2->GetChisquare()/(nmisure-2)<< endl;
 
-    std::cout << std::endl << "--------------------"<< std::endl;
-    std::cout << "|  Time: " << (chn-q)/m << "  |" << std::endl;
-    std::cout << std::endl << "--------------------"<< std::endl;
+    std::cout << std::endl << "------------------------------"<< std::endl;
+    std::cout << "|  Errore dei cavi: " << sqrt(p_err*p_err-1)/m << "ns |"<< std::endl;
+    std::cout << "|  Chn: " << time*m <<" +- "<< sqrt(sm*time*sm*time + sq*sq)<<"  |" << std::endl;
+    std::cout << "|  Time: " << (chn-q)/m << "ns |" << std::endl;
+    std::cout << std::endl << "------------------------------"<< std::endl;
 } 
