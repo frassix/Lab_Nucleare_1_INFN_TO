@@ -26,6 +26,7 @@ void direzioni_arrivo(){
   //PARTE IN CUI FACCIO I CONTI RISPETTO ALL'UNO
 
   double t21 = 25., t31 = 12., t41 = 10., t51 = 10.;
+    //double t21 = 31., t31 = 16., t41 = 15., t51 = 11.;
   int count = 0;
   bool fuori_scala[CONST_NSMIURE];
   ifstream TDCfile("TDC_QUINTUPLA_FINALE_5300.dat");
@@ -74,8 +75,10 @@ void direzioni_arrivo(){
   double t24, t35;
   double A, B; //costanti da cui ricavo \theta e \phi
   double theta, phi; //angolo zenitale e azimutale
+  double T = 0.;
   TH1D *histTheta = new TH1D("Angolo zenitale", "N(Theta)", 100, 0., TMath::PiOver2()); 
-  TH1D *histPhi = new TH1D("Angolo azimutale", "N(Phi)", 400, 0., TMath::TwoPi());
+  TH1D *histPhi = new TH1D("Angolo azimutale", "N(Phi)", 100, 0., TMath::TwoPi());
+  TH1D *histT = new TH1D("Spessore", "Spessore", 100, -60.e-9, +60.e-9);
   count = 0;
   while(count<real_nmis){
     t24 = (double)t2_real[count] - (double)t4_real[count];
@@ -100,6 +103,11 @@ void direzioni_arrivo(){
     }*/
     histPhi->Fill(phi);
 
+    //analisi spessore
+    T = t2_real[count] - t3_real[count] - t5_real[count] + t4_real[count];
+    histT->Fill(T);
+    //fine analisi spessore
+
     count++;
   }
 
@@ -122,18 +130,27 @@ void direzioni_arrivo(){
 
   TCanvas *c1 = new TCanvas();
   TCanvas *c2 = new TCanvas();
+  TCanvas *c3 = new TCanvas();
 
   c1->cd();
   histTheta->Fit(thetaFit, "", "", 0.05, 0.70);
 
   cout << "X0 = " << air_pressure_avg << endl;
   cout << "ChiQuadro = " << thetaFit->GetChisquare() << "; \tNdof = " << thetaFit->GetNDF() << "; \tChiQuadro Ridotto = " << thetaFit->GetChisquare()/thetaFit->GetNDF() << "; \t P = " << thetaFit->GetProb() << endl;
-
+  histTheta->GetYaxis()->SetTitle("Conteggi");
+  histTheta->GetXaxis()->SetTitle("Theta(rad)");
   histTheta->Draw();
   c2->cd();
   histPhi->SetMinimum(0.);
   histPhi->Fit("pol0");
+  histPhi->GetYaxis()->SetTitle("Conteggi");
+  histPhi->GetXaxis()->SetTitle("Phi(rad)");
   histPhi->Draw();
+  c3->cd();
+  histT->Draw();
+  histT->Fit("gaus");
+  histT->GetYaxis()->SetTitle("Conteggi");
+  histT->GetXaxis()->SetTitle("T(s)");
 
 
 /*  TCanvas *cPad = new TCanvas("cPad","Istogrammi delle DeltaT", 0, 0, 1600, 800);
@@ -147,22 +164,6 @@ void direzioni_arrivo(){
   histPhi->Draw();*/
 
   cout << "Integrale histTheta = " << histTheta->Integral() << endl;
-
-  //ANALISI DELLO SPESSORE
-  double T = 0.;
-  TH1D *histT = new TH1D("Spessore", "Spessore", 100, -60.e-9, +60.e-9);
-  count = 0;
-  while(count<real_nmis){
-    T = t2_real[count] - t3_real[count] - t5_real[count] + t4_real[count];
-    histT->Fill(T);
-    count++;
-  }
-
-  TCanvas *c3 = new TCanvas();
-  c3->cd();
-  histT->Draw();
-  histT->Fit("gaus");
-
   cout << "Spessore = (" << CONST_C*histT->GetStdDev()/2. << " +- " << CONST_C*histT->GetStdDevError()/2. << ") m" << endl;
 
   //FINE ANALISI DELLO SPESSORE
